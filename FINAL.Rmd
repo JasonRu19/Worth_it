@@ -1,0 +1,159 @@
+---
+title: "Final"
+author: "Jason Louwagie"
+date: "11/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(janitor)
+library(lubridate)
+library(here)
+library(tibble)
+
+setwd("C:/Users/moonw/Documents/UTSA MSDA Graduate Program/Fall 2020/DA 6233/Final Project")
+
+```
+
+```{r}
+gprice <- read.csv("EMM_EPM0R_PTE_YORD_DPGw.csv") %>% 
+  clean_names()
+
+colnames(gprice)[2] = "Price"
+gprice$i_date <- parse_date_time(gprice$i_date, orders= c("ymd", "dmy", "mdy"))
+
+str(gprice)
+
+gprice$i_date <- as.Date(gprice$i_date)
+
+
+gprice$observation<-1:nrow(gprice)
+
+gprice <- gprice %>%
+  dplyr::filter(.,observation >= 961)
+
+gprice <- gprice %>%
+  dplyr::filter(.,observation <= 970)
+
+gprice <- select(gprice,-c(observation))
+
+df <-data.frame(i_date = c( "2018-10-30","2018-10-31","2018-11-1","2018-11-2","2018-11-3","2018-11-4","2018-11-6","2018-11-7","2018-11-8","2018-11-9","2018-11-10","2018-11-11","2018-11-13","2018-11-14","2018-11-15","2018-11-16","2018-11-17","2018-11-18","2018-11-20","2018-11-21","2018-11-22","2018-11-23","2018-11-24","2018-11-25","2018-11-27","2018-11-28","2018-11-29","2018-11-30","2018-12-1","2018-12-2","2018-12-4","2018-12-5","2018-12-6","2018-12-7","2018-12-8","2018-12-9","2018-12-11","2018-12-12","2018-12-13","2018-12-14","2018-12-15","2018-12-16","2018-12-18","2018-12-19","2018-12-20","2018-12-21","2018-12-22","2018-12-23","2018-12-25","2018-12-26","2018-12-27","2018-12-28","2018-12-29","2018-12-30"), Price = c(2.96,2.96,2.96,2.96,2.96,2.96,2.88,2.88,2.88,2.88,2.88,2.88,2.79,2.79,2.79,2.79,2.79,2.79,2.64,2.64,2.64,2.64,2.64,2.64,2.55,2.55,2.55,2.55,2.55,2.55,2.43,2.43,2.43,2.43,2.43,2.43,2.49,2.49,2.49,2.49,2.49,2.49,2.39,2.39,2.39,2.39,2.39,2.39,2.35,2.35,2.35,2.35,2.35,2.35))
+
+df$i_date <-as.Date(df$i_date) 
+
+gprice <- rbind(gprice,df)
+gprice <- arrange(gprice,(i_date))
+
+str(gprice)
+gprice$i_date <- parse_date_time(gprice$i_date, orders= c("ymd", "dmy", "mdy"))
+gprice$i_date <- as.Date(gprice$i_date)
+
+```
+
+```{r}
+trips <- read.csv("Transportation_Network_Providers_-_Trips_TNP_-_Trips100k.csv") %>% 
+  clean_names()
+
+trips <- select(trips,-c(i_dropoff_census_tract,dropoff_community_area,pickup_area_group,pickup_census_tract1,pickup_community_area,shared_trip_authorized,trip_end_timestamp,count_of_trips, trips_pooled))
+
+names(trips)
+
+colnames(trips)[8] = "trip_date"
+colnames(trips)[18] = "revenue"
+
+str(trips$trip_date)
+
+trips$trip_date <-  as.Date(trips$trip_date, format="%m/%d/%Y") 
+
+
+
+```
+
+
+```{r}
+mpg <- read.csv("fueleconomy.csv") %>% 
+  clean_names()
+
+mpg <- select(mpg,c(city08,comb08,highway08,make,model,year))
+mpg <- mpg %>%
+  dplyr::filter(.,year >= 2000)
+
+mpg <- mpg %>%
+  dplyr::filter(.,make == "Acura" |make == "Alfa Romeo" | make == "Audi" | make == "Bentley" | make == "Bmw" | make == "Bugatti" | make == "Buick" | make == "Cadillac" | make == "Chevrolet" | make == "Chrysler" | make == "Dodge" | make == "Fiat" | make == "Ford" | make == "Gmc" | make == "Honda" | make == "Chevrolet" | make == "Chevrolet" | make == "Chevrolet" | make == "Chevrolet" | make == "Hummer" | make == "Hyundai" | make == "Infiniti" | make == "Isuzu" | make == "Jaguar" | make == "Jeep" | make == "Kia" | make == "Land Rover" | make == "Lexus" | make == "Lincoln" | make == "Maserati" | make == "Mazda" | make == "Mercedes-Benz" | make == "Mercury" | make == "Mini" | make == "Mitsubishi" | make == "Nissan" | make == "Plymouth" | make == "Pontiac" | make == "Porsche" | make == "Rolls-Royce" | make == "Saab" | make == "Saturn" | make == "Scion" | make == "Smart" | make == "Subaru" | make == "Suzuki" | make == "Tesla" | make == "Toyota" |make == "Volkswagen" | make == "Volvo")
+
+mpg <- mpg %>% 
+  select(,-c(model))
+
+```
+
+```{r}
+cars <- read.csv("Transportation_Network_Providers_-_Vehicles.csv") %>% 
+  clean_names()
+
+str(cars)
+
+cars <- select(cars,c(month_reported,year,make,model))
+cars <- arrange(cars,month_reported,year,make)
+
+cars <- select(cars,-c(month_reported,model))
+
+```
+
+```{r}
+carmpg <- inner_join(mpg,cars,by=c("make"="make","year"))
+
+avgcty <- summarise(carmpg, avgcty = mean(city08))
+avghwy <- summarise(carmpg, avghwy = mean(highway08))
+avgcomb <- summarise(carmpg,avgcomb = mean(comb08))
+
+```
+
+
+```{r}
+
+gp_trips <- inner_join(gprice,trips, by = c("i_date"="trip_date"))
+
+str(gp_trips$revenue)
+
+gp_trips$revenue <- as.numeric(gp_trips$revenue)
+
+gp_trips <- add_column(gp_trips,min_wage=c(min_wage=8.25))
+
+gp_trips <- add_column(gp_trips,avgcty=c(avgcty=avgcty))
+gp_trips$avgcty <- as.numeric(gp_trips$avgcty)
+gp_trips$avgcty <- round(gp_trips$avgcty ,digit=3) 
+
+gp_trips <- add_column(gp_trips,avghwy=c(avghwy=avghwy))
+gp_trips$avghwy <- as.numeric(gp_trips$avghwy)
+gp_trips$avghwy <- round(gp_trips$avghwy ,digit=2) 
+
+gp_trips <- add_column(gp_trips,avgcomb=c(avgcomb=avgcomb))
+gp_trips$avgcomb <- as.numeric(gp_trips$avgcomb)
+gp_trips$avgcomb <- round(gp_trips$avgcomb ,digit=2) 
+
+names(gp_trips)
+
+gp_trips <- gp_trips %>%
+  dplyr::mutate(.,trip_minutes = (trip_seconds/60), pctofmpg = (trip_miles/avgcomb),  gascostoftrip = (pctofmpg*Price), profit = (revenue-gascostoftrip), wageperhour = (trip_minutes/min_wage),proftvsminwage = (profit-wageperhour), RideshareOrMinWage = ifelse(profit>wageperhour,"Rideshare","MinWageJob"), WorthIt = ifelse(RideshareOrMinWage == "Rideshare",1,0), )
+
+gp_trips$trip_minutes <- round(gp_trips$trip_minutes ,digit=2) 
+gp_trips$pctofmpg <- round(gp_trips$pctofmpg ,digit=2)
+gp_trips$wageperhour <- round(gp_trips$wageperhour ,digit=2)
+gp_trips$proftvsminwage <- as.numeric(gp_trips$proftvsminwage)
+gp_trips$proftvsminwage <- round(gp_trips$proftvsminwage ,digit=2)
+gp_trips$gascostoftrip <- round(gp_trips$gascostoftrip ,digit=3)
+
+
+str(gp_trips$worthit)
+
+names(gp_trips)
+
+gp_trips$dropoff_centroid_latitude <- as.numeric(gp_trips$dropoff_centroid_latitude)
+gp_trips$dropoff_centroid_longitude <- as.numeric(gp_trips$dropoff_centroid_longitude)
+
+write.csv(gp_trips,"WorthIt")
+```
+
